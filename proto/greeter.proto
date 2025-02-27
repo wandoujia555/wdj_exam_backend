@@ -1,0 +1,83 @@
+// syntax = "proto3";
+
+// option java_multiple_files = true;
+
+// package org.apache.dubbo.sample.tri;
+
+
+// // The request message containing the user's name.
+// message GreeterRequest {
+//   string name = 1;
+// }
+
+// // The response message containing the greetings
+// message GreeterReply {
+//   string message = 1;
+// }
+
+// service Greeter {
+
+//   // unary
+//   rpc greet(GreeterRequest) returns (GreeterReply);
+
+//   // clientStream
+//   rpc greetClientStream(stream GreeterRequest) returns (GreeterReply);
+
+//   // serverStream
+//   rpc greetServerStream(GreeterRequest) returns (stream GreeterReply);
+
+//   // bi streaming
+//   rpc greetStream(stream GreeterRequest) returns (stream GreeterReply);
+
+// }
+
+// // // ./proto/greeter.proto
+// // syntax = "proto3";
+
+// // package org.apache.dubbo.sample.tri;
+
+// // message GreeterRequest {
+// //   string name = 1;
+// // }
+
+// // message GreeterReply {
+// //   string message = 1;
+// // }
+
+// // service Greeter {
+// //   rpc greet(GreeterRequest) returns (GreeterReply);
+// // }
+
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package greeter;
+
+
+// The request message containing the user's name.
+message GreeterRequest {
+string name = 1;
+}
+
+// The response message containing the greetings
+message GreeterReply {
+string message = 1;
+}
+
+message LoginRequest {
+    string code = 1;
+    string password = 2;
+}
+
+// The response message containing the greetings
+message LoginReply {
+    string message = 1;
+}
+
+service Greeter{
+// unary
+rpc greet(GreeterRequest) returns (GreeterReply);
+rpc authenticate(LoginRequest) returns (LoginReply);
+}
