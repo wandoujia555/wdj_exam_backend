@@ -1,3 +1,5 @@
+mod api;
+
 pub mod protos {
     #![allow(non_camel_case_types)]
     include!(concat!("../", "/greeter.rs"));
@@ -20,45 +22,14 @@ fn main() {
         Err(_) => println!("MY_VARIABLE is not set"),
     }
 
-    let data = tokio::runtime::Runtime::new().unwrap().block_on(async {
-        handler().await;
-    });
+    // let data = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    //     handler().await;
+    // });
     start_server();
 }
 
-// 假设这是一个 Dubbo 客户端的同步调用
-#[tokio::main]
-async fn call_dubbo_service() -> String {
-    let mut cli = GreeterClient::new().with_uri("http://127.0.0.1:8888".to_string());
-    let resp: dubbo::codegen::Response<GreeterReply> = cli
-        .greet(Request::new(GreeterRequest {
-            name: "hello, I'm client".to_string(),
-        }))
-        .await
-        .unwrap();
 
-    let (_, msg) = resp.into_parts();
-    println!("response: {:?}", msg);
-    return msg.message;
-}
 
-// 异步处理器，调用 Dubbo 服务
-async fn handler() -> impl Responder {
-    // match task::spawn(call_dubbo_service()).await {
-    //     Ok(result) => {
-    //         println!("异步任务返回的结果: {}", result);
-    //         // 在这里执行任务完成后的操作
-    //         println!("执行任务完成后的操作");
-    //     }
-    //     Err(e) => {
-    //         eprintln!("异步任务发生错误: {:?}", e);
-    //     }
-    // };
-
-    let result = task::spawn_blocking(|| call_dubbo_service()).await.unwrap();
-
-    HttpResponse::Ok().body(result)
-}
 mod middleware;
 use actix_cors::Cors;
 #[actix_web::main] // 使用 actix 的异步运行时

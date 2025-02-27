@@ -29,7 +29,7 @@ impl ManageConnection for RedisManager {
     }
 }
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 type MyPool = Pool<RedisManager>;
 pub static GLOBAL_REDIS: Lazy<Mutex<MyPool>> = Lazy::new(|| {
     Mutex::new(
@@ -46,7 +46,7 @@ pub async fn redisi_init() -> RedisResult<()> {
     // let manager = RedisManager::new();
     let mut con = GLOBAL_REDIS
         .lock()
-        .unwrap()
+        .await
         .get()
         .expect("Failed to get Redis connection");
     // let pool: Pool<RedisManager> = Pool::builder()

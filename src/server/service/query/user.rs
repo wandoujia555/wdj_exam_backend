@@ -1,18 +1,24 @@
 
 use serde::Deserialize;
-use crate::database::GLOBAL_DATA;
+
+use crate::service::mysql::GLOBAL_DATA;
+use mysql_async::{Pool, Row, prelude::*};
+
 #[derive(Deserialize, Debug)]
-struct Student {
+pub struct Student {
     code: i32,
     name: String,
     password: String,
 }
-async fn query_student_by_id(student_code: i32) -> Result<Option<Student>, mysql_async::Error> {
-    
-
-    let global_data = GLOBAL_DATA.lock().unwrap();
+impl Student {
+    pub fn get_password(&self) -> &str {
+        &self.password  // 只允许读取密码，不暴露字段本身
+    }
+}
+pub async fn query_student_by_code(student_code: i32) -> Result<Option<Student>, mysql_async::Error> {
+    let global_data = GLOBAL_DATA.lock().await;
     let query = "SELECT code, name, password FROM student WHERE code = ?";
-    let mut conn = global_data.pool.get_conn().await?;
+    let mut conn = global_data.get_conn().await?;
     let result: Option<Row> = conn.exec_first(query, (student_code,)).await?;
 
     if let Some(row) = result {
@@ -26,3 +32,4 @@ async fn query_student_by_id(student_code: i32) -> Result<Option<Student>, mysql
         Ok(None)
     }
 }
+

@@ -1,5 +1,8 @@
 use std::{io::ErrorKind, pin::Pin};
 use actix_web::body::None;
+use api::login::authenticate;
+use service::mysql::GLOBAL_DATA;
+use service::query::user::query_student_by_code;
 use tokio::task;
 use async_trait::async_trait;
 use dubbo::codegen::{Request, Response};
@@ -9,7 +12,7 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
 use dotenv::dotenv;
-use std::env;
+use std::{env, result};
 
 pub mod protos {
     #![allow(non_camel_case_types)]
@@ -41,9 +44,17 @@ impl Greeter for GreeterImpl {
         }))
     }
     async fn authenticate(&self, request: Request<LoginRequest>) -> Result<Response<LoginReply>, dubbo::status::Status> {
-        println!("request: {:?}", request.into_inner());
+        let studenta: LoginRequest = request.into_inner();
+        let result = query_student_by_code(studenta.code).await;
+        let mut message = false;
+        if let Ok(value) = result {
+            if let Some(value) = value {
+                message = value.get_password() == studenta.password;
+            }
+        }
+        // authenticate(studenta.code, studenta.password).await;
         Ok(Response::new(LoginReply{
-            message: "hello dubbo-rust!".to_string(),
+            message: message,
         }))
     }
 }

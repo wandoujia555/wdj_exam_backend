@@ -49,7 +49,6 @@ async fn login() -> impl Responder {
 }
 
 use serde::{Deserialize, Serialize};
-
 use crate::middleware::auth::{generate_jwt, User};
 // #[derive(Deserialize, Serialize)]
 // pub struct LoginData {
@@ -61,24 +60,27 @@ use crate::middleware::auth::{generate_jwt, User};
 struct JwtResponse {
     token: String,
 }
-
+use crate::api::util::{self, authenticate};
 async fn post_login(data: web::Json<User>) -> impl Responder {
     // println!("{}",form.name);
     // let response = format!("Name: {}, Age: {}", form.name, form.age);
     // HttpResponse::Ok().body(response)
-
     // let login_data = data.into_inner(); // 反序列化 JSON 数据
+    let isAuth = authenticate(data.code,data.password.clone()).await;
+    if isAuth {
+        let login_data =  generate_jwt(&data);
 
-    let login_data =  generate_jwt(&data);
-
-    if login_data.is_err() {
-        return  HttpResponse::Ok().body("create jwt error")
+        if login_data.is_err() {
+            return  HttpResponse::Ok().body("create jwt error")
+        }
+        let login_data_value = JwtResponse {
+            token: login_data.unwrap(),
+        };
+        
+        HttpResponse::Ok().json(login_data_value) // 返回解析后的数据作为 JSON 响应
+    }else {
+        HttpResponse::Ok().json(false) // 返回解析后的数据作为 JSON 响应
     }
-    let login_data_value = JwtResponse {
-        token: login_data.unwrap(),
-    };
-    
-    HttpResponse::Ok().json(login_data_value) // 返回解析后的数据作为 JSON 响应
 }
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {

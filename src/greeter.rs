@@ -15,8 +15,8 @@ pub struct GreeterReply {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
-    #[prost(string, tag = "1")]
-    pub code: ::prost::alloc::string::String,
+    #[prost(int32, tag = "1")]
+    pub code: i32,
     #[prost(string, tag = "2")]
     pub password: ::prost::alloc::string::String,
 }
@@ -24,8 +24,8 @@ pub struct LoginRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginReply {
-    #[prost(string, tag = "1")]
-    pub message: ::prost::alloc::string::String,
+    #[prost(bool, tag = "1")]
+    pub message: bool,
 }
 /// Generated client implementations.
 pub mod greeter_client {

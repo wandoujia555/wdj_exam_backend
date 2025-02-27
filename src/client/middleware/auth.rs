@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct User {
-    code: String,
-    password: String,
+    pub code: i32,
+    pub password: String,
 }
 use chrono::Duration;
 use jsonwebtoken::DecodingKey;

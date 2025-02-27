@@ -67,13 +67,13 @@ string message = 1;
 }
 
 message LoginRequest {
-    string code = 1;
+    int32 code = 1;
     string password = 2;
 }
 
 // The response message containing the greetings
 message LoginReply {
-    string message = 1;
+    bool message = 1;
 }
 
 service Greeter{
