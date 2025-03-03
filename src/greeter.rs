@@ -24,8 +24,19 @@ pub struct LoginRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginReply {
-    #[prost(bool, tag = "1")]
-    pub message: bool,
+    #[prost(oneof = "login_reply::Message", tags = "1, 2")]
+    pub message: ::core::option::Option<login_reply::Message>,
+}
+/// Nested message and enum types in `LoginReply`.
+pub mod login_reply {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Message {
+        #[prost(bool, tag = "1")]
+        IsLogin(bool),
+        #[prost(string, tag = "2")]
+        Name(::prost::alloc::string::String),
+    }
 }
 /// Generated client implementations.
 pub mod greeter_client {

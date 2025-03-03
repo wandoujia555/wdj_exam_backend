@@ -73,7 +73,10 @@ message LoginRequest {
 
 // The response message containing the greetings
 message LoginReply {
-    bool message = 1;
+    oneof message {
+        bool is_login = 1;
+        string name = 2;
+    }
 }
 
 service Greeter{

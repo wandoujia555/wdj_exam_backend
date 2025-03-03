@@ -26,18 +26,16 @@ async fn contact() -> impl Responder {
     HttpResponse::Ok().body("Contact us at contact@example.com")
 }
 
-
 #[derive(Serialize)]
 struct SubmitResponse {
     text: String,
 }
 
 async fn submit() -> impl Responder {
-
     let data = SubmitResponse {
         text: "asdasd".to_string(),
     };
-    
+
     HttpResponse::Ok().json(data) // 返回解析后的数据作为 JSON 响应
 
     // HttpResponse::Ok().body("Form submitted successfully!")
@@ -48,8 +46,8 @@ async fn login() -> impl Responder {
     HttpResponse::Ok().body("Form submasdasdaditted successfully!")
 }
 
-use serde::{Deserialize, Serialize};
 use crate::middleware::auth::{generate_jwt, User};
+use serde::{Deserialize, Serialize};
 // #[derive(Deserialize, Serialize)]
 // pub struct LoginData {
 //     code: String,
@@ -59,27 +57,36 @@ use crate::middleware::auth::{generate_jwt, User};
 #[derive(Serialize)]
 struct JwtResponse {
     token: String,
+    name: String,
 }
 use crate::api::util::{self, authenticate};
+use crate::protos::login_reply;
 async fn post_login(data: web::Json<User>) -> impl Responder {
     // println!("{}",form.name);
     // let response = format!("Name: {}, Age: {}", form.name, form.age);
     // HttpResponse::Ok().body(response)
     // let login_data = data.into_inner(); // 反序列化 JSON 数据
-    let isAuth = authenticate(data.code,data.password.clone()).await;
-    if isAuth {
-        let login_data =  generate_jwt(&data);
+    let auth = authenticate(data.code, data.password.clone()).await;
 
-        if login_data.is_err() {
-            return  HttpResponse::Ok().body("create jwt error")
+    match auth {
+        Some(login_reply::Message::IsLogin(is_login)) => HttpResponse::Ok().json(false),
+        Some(login_reply::Message::Name(name)) => {
+            let login_data = generate_jwt(&data);
+
+            if login_data.is_err() {
+                return HttpResponse::Ok().body("create jwt error");
+            }
+
+            let login_data_value = JwtResponse {
+                token: login_data.unwrap(),
+                name: name,
+            };
+            
+            HttpResponse::Ok().json(login_data_value) // 返回解析后的数据作为 JSON 响应
         }
-        let login_data_value = JwtResponse {
-            token: login_data.unwrap(),
-        };
-        
-        HttpResponse::Ok().json(login_data_value) // 返回解析后的数据作为 JSON 响应
-    }else {
-        HttpResponse::Ok().json(false) // 返回解析后的数据作为 JSON 响应
+        None => {
+            HttpResponse::Ok().json(false) // 返回解析后的数据作为 JSON 响应
+        }
     }
 }
 

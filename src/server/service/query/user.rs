@@ -14,6 +14,9 @@ impl Student {
     pub fn get_password(&self) -> &str {
         &self.password  // 只允许读取密码，不暴露字段本身
     }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 }
 pub async fn query_student_by_code(student_code: i32) -> Result<Option<Student>, mysql_async::Error> {
     let global_data = GLOBAL_DATA.lock().await;

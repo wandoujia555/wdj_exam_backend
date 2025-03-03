@@ -31,7 +31,7 @@ async fn make_request() {
 
 // 验证登录是否成功
 
-pub async fn authenticate(code: i32, password: String) -> bool {
+pub async fn authenticate(code: i32, password: String) -> Option<protos::login_reply::Message> {
     let mut cli = CLIENT.clone(); // 共享并重用客户端
     let resp: dubbo::codegen::Response<LoginReply> = cli
         .authenticate(Request::new(LoginRequest {
@@ -41,6 +41,7 @@ pub async fn authenticate(code: i32, password: String) -> bool {
         .await
         .unwrap();
     let (_, msg) = resp.into_parts();
+    // let a: Option<protos::login_reply::Message> = msg.message;
     return msg.message;
 }
 // 假设这是一个 Dubbo 客户端的同步调用
