@@ -28,8 +28,6 @@ fn main() {
     start_server();
 }
 
-
-
 mod middleware;
 use actix_cors::Cors;
 #[actix_web::main] // 使用 actix 的异步运行时

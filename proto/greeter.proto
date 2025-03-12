@@ -60,17 +60,17 @@ package greeter;
 message GreeterRequest {
 string name = 1;
 }
-
 // The response message containing the greetings
 message GreeterReply {
 string message = 1;
 }
 
+
+// The request message containing the user's name.
 message LoginRequest {
     int32 code = 1;
     string password = 2;
 }
-
 // The response message containing the greetings
 message LoginReply {
     oneof message {
@@ -79,8 +79,52 @@ message LoginReply {
     }
 }
 
+message PaperRequest {
+    int32 code = 1;
+    int32 id = 2;
+}
+// 定义枚举类型 QuestionType
+enum QuestionType {
+    CHOICE = 0;
+    SELECTION = 1;
+    INTERLOCUTION = 2;
+    JUDGE = 3;
+}
+
+// 定义 Question 消息
+message Question {
+    int32 id = 1;
+    QuestionType question_type = 2;
+    string name = 3;
+    string content = 4;
+    int32 score = 5;
+}
+
+// 定义 QuestionList 消息
+message QuestionList {
+    int32 id = 1;
+    QuestionType question_type = 2;
+    string name = 3;
+    repeated Question content = 4;
+    int32 question_num = 5;
+    int32 total_score = 6;
+}
+
+// 定义 Paper 消息
+message Paper {
+    int32 id = 1;
+    string name = 2;
+    int32 question_num = 3;
+    int32 minutes = 4;
+    int32 status = 5;
+    int32 created_time = 6;
+    int32 update_time = 7;
+    map<string, QuestionList> content = 8;
+}
+
 service Greeter{
 // unary
 rpc greet(GreeterRequest) returns (GreeterReply);
 rpc authenticate(LoginRequest) returns (LoginReply);
+rpc getPaperById(PaperRequest) returns (Paper);
 }

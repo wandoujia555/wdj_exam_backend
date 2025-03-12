@@ -46,5 +46,5 @@ redis = "0.29"  # redis
 r2d2 = "0.8"    # redis连接池
 
 [build-dependencies]
-dubbo-build = "0.1.0"
+dubbo-build = "0.2.0"
 

@@ -101,7 +101,7 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         println!("Hi from start. You requested: {}", req.path());
-        if req.path() == "/login" {
+        if req.path() == "/login" || req.path() == "/" || req.path() == "/test" {
             let fut = self.service.call(req);
             return Box::pin(fut);
         }

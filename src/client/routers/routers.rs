@@ -1,5 +1,8 @@
+use crate::{api::util::{self, authenticate, call_dubbo_service, get_paper_by_id}, protos::Paper};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-
+use chrono::Utc;
+use prost::Message;
+use serde_json::to_string;
 // /// 处理根路径的 GET 请求
 // async fn index() -> impl Responder {
 //     HttpResponse::Ok().body("Hello, world!")
@@ -15,7 +18,10 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 //         .service(web::resource("/submit").route(web::post().to(submit_form)));
 // }
 async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello, world!")
+    println!("{}", Utc::now().timestamp());
+    let res = call_dubbo_service().await;
+    println!("{}", Utc::now().timestamp());
+    HttpResponse::Ok().body(res)
 }
 
 async fn about() -> impl Responder {
@@ -59,7 +65,6 @@ struct JwtResponse {
     token: String,
     name: String,
 }
-use crate::api::util::{self, authenticate};
 use crate::protos::login_reply;
 async fn post_login(data: web::Json<User>) -> impl Responder {
     // println!("{}",form.name);
@@ -81,12 +86,24 @@ async fn post_login(data: web::Json<User>) -> impl Responder {
                 token: login_data.unwrap(),
                 name: name,
             };
-            
+
             HttpResponse::Ok().json(login_data_value) // 返回解析后的数据作为 JSON 响应
         }
         None => {
             HttpResponse::Ok().json(false) // 返回解析后的数据作为 JSON 响应
         }
+    }
+}
+
+async fn test() -> impl Responder {
+    let result = get_paper_by_id().await;
+    println!("{:?}", result);
+    match result {
+        Ok(paper) => {
+            let paper_bytes = paper.encode_to_vec();
+            HttpResponse::Ok().body(paper_bytes)
+        },
+        Err(_) => HttpResponse::Ok().json(false),
     }
 }
 
@@ -96,5 +113,6 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/contact", web::get().to(contact))
         .route("/submit", web::post().to(submit))
         .route("/login", web::post().to(post_login))
-        .route("/login", web::get().to(login));
+        .route("/login", web::get().to(login))
+        .route("/test", web::post().to(test));
 }

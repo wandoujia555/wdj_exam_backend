@@ -1,9 +1,10 @@
-use dubbo::{codegen::Request};
-use crate::protos;
-use protos::{greeter_client::GreeterClient, GreeterReply, GreeterRequest, LoginReply, LoginRequest};
+use crate::protos::{self, PaperRequest};
+use dubbo::codegen::Request;
 use once_cell::sync::Lazy;
+use protos::{
+    greeter_client::GreeterClient, GreeterReply, GreeterRequest, LoginReply, LoginRequest, Paper,
+};
 use std::sync::Arc;
-
 
 static CLIENT: Lazy<GreeterClient> =
     Lazy::new(|| GreeterClient::new().with_uri("http://127.0.0.1:8888".to_string()));
@@ -45,7 +46,7 @@ pub async fn authenticate(code: i32, password: String) -> Option<protos::login_r
     return msg.message;
 }
 // 假设这是一个 Dubbo 客户端的同步调用
-async fn call_dubbo_service() -> String {
+pub async fn call_dubbo_service() -> String {
     let mut cli = GreeterClient::new().with_uri("http://127.0.0.1:8888".to_string());
     let resp: dubbo::codegen::Response<GreeterReply> = cli
         .greet(Request::new(GreeterRequest {
@@ -57,4 +58,17 @@ async fn call_dubbo_service() -> String {
     let (_, msg) = resp.into_parts();
     println!("response: {:?}", msg);
     return msg.message;
+}
+
+// 假设这是一个 Dubbo 客户端的同步调用
+pub async fn get_paper_by_id() -> Result<Paper, dubbo::status::Status> {
+    let mut cli = CLIENT.clone(); // 共享并重用客户端
+    let resp: dubbo::codegen::Response<Paper> = cli
+        .get_paper_by_id(Request::new(PaperRequest { code: 1, id: 1 }))
+        .await
+        .unwrap();
+    
+    let (_, msg) = resp.into_parts();
+    println!("response: {:?}", msg);
+    return Ok(msg);
 }

@@ -41,7 +41,6 @@ pub static GLOBAL_REDIS: Lazy<Mutex<MyPool>> = Lazy::new(|| {
     )
 });
 
-#[tokio::main]
 pub async fn redisi_init() -> RedisResult<()> {
     // let manager = RedisManager::new();
     let mut con = GLOBAL_REDIS
