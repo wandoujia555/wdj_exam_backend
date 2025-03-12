@@ -47,6 +47,7 @@ fn verify_jwt(token: &str) -> Result<serde_json::Value, jsonwebtoken::errors::Er
 
     decode::<serde_json::Value>(token, &DecodingKey::from_secret(secret_key), &validation)
         .map(|data| data.claims)
+        .map_err(|err| err.into())
 }
 
 use std::future::{ready, Ready};

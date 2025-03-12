@@ -47,4 +47,4 @@ r2d2 = "0.8"    # redis连接池
 
 [build-dependencies]
 dubbo-build = "0.2.0"
-
+prost-build = "0.11.9"

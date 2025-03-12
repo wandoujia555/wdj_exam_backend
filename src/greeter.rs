@@ -1,4 +1,5 @@
 /// The request message containing the user's name.
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GreeterRequest {
@@ -6,6 +7,7 @@ pub struct GreeterRequest {
     pub name: ::prost::alloc::string::String,
 }
 /// The response message containing the greetings
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GreeterReply {
@@ -13,6 +15,7 @@ pub struct GreeterReply {
     pub message: ::prost::alloc::string::String,
 }
 /// The request message containing the user's name.
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
@@ -22,6 +25,7 @@ pub struct LoginRequest {
     pub password: ::prost::alloc::string::String,
 }
 /// The response message containing the greetings
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginReply {
@@ -30,6 +34,7 @@ pub struct LoginReply {
 }
 /// Nested message and enum types in `LoginReply`.
 pub mod login_reply {
+    #[derive(serde::Serialize, serde::Deserialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Message {
@@ -39,6 +44,7 @@ pub mod login_reply {
         Name(::prost::alloc::string::String),
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PaperRequest {
@@ -48,6 +54,7 @@ pub struct PaperRequest {
     pub id: i32,
 }
 /// 定义 Question 消息
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Question {
@@ -63,6 +70,7 @@ pub struct Question {
     pub score: i32,
 }
 /// 定义 QuestionList 消息
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuestionList {
@@ -80,6 +88,7 @@ pub struct QuestionList {
     pub total_score: i32,
 }
 /// 定义 Paper 消息
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Paper {
@@ -104,6 +113,7 @@ pub struct Paper {
     >,
 }
 /// 定义枚举类型 QuestionType
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QuestionType {

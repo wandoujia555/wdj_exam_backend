@@ -100,8 +100,11 @@ async fn test() -> impl Responder {
     println!("{:?}", result);
     match result {
         Ok(paper) => {
+
+            // serde_json::to_string(&paper).unwrap();
             let paper_bytes = paper.encode_to_vec();
-            HttpResponse::Ok().body(paper_bytes)
+            // serde_json::to_string(&paper).unwrap();
+            HttpResponse::Ok().json(paper_bytes)
         },
         Err(_) => HttpResponse::Ok().json(false),
     }
