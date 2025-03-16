@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use dubbo::codegen::{Request, Response};
 use dubbo::Dubbo;
 use protos::login_reply::{self, Message};
-use service::query::paper::query_paper_by_id;
+use service::query::paper::{query_paper_list_by_id, query_paper_by_id};
 use service::query::user::query_student_by_code;
 
 use dotenv::dotenv;
@@ -67,7 +67,9 @@ impl Greeter for GreeterImpl {
         _request: Request<protos::PaperRequest>,
     ) -> Result<Response<protos::Paper>, dubbo::status::Status> {
 
-        let result = match query_paper_by_id(1).await {
+        query_paper_list_by_id().await;
+
+        let result = match query_paper_by_id(_request.into_inner().id).await {
             Ok(value) => value,
             Err(_) => None,
         };

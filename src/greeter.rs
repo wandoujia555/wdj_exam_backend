@@ -48,8 +48,6 @@ pub mod login_reply {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PaperRequest {
-    #[prost(int32, tag = "1")]
-    pub code: i32,
     #[prost(int32, tag = "2")]
     pub id: i32,
 }

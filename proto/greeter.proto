@@ -56,6 +56,13 @@ option java_multiple_files = true;
 package greeter;
 
 
+// 分页信息
+message PageInfo {
+    int32 page_size = 1;
+    int32 pageP_num = 2;
+}
+
+
 // The request message containing the user's name.
 message GreeterRequest {
 string name = 1;
@@ -80,8 +87,7 @@ message LoginReply {
 }
 
 message PaperRequest {
-    int32 code = 1;
-    int32 id = 2;
+    int32 id = 1;
 }
 // 定义枚举类型 QuestionType
 enum QuestionType {
@@ -121,6 +127,27 @@ message Paper {
     int32 update_time = 7;
     map<string, QuestionList> content = 8;
 }
+
+
+
+
+message PaperInfo {
+    int32 id = 1;
+    string name = 2;
+    int32 question_num = 3;
+    int32 minutes = 4;
+    int32 status = 5;
+    int32 created_time = 6;
+    int32 update_time = 7;
+    string desc = 8;
+}
+message PaperInfoList {
+    repeated PaperInfo content = 1;
+    int32 total = 2;
+    int32 pageSize = 3;
+    int32 pageNum = 4;
+}
+
 
 service Greeter{
 // unary

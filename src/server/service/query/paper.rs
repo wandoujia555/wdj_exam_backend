@@ -3,59 +3,13 @@ use std::collections::HashMap;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::{protos::{Paper, Question, QuestionList, QuestionType}, service::{mysql::GLOBAL_DATA, redis::GLOBAL_REDIS}};
-use redis::Commands;
-use mysql_async::{prelude::*, Row};
+use crate::{
+    protos::{Paper, Question, QuestionList, QuestionType},
+    service::{mysql::GLOBAL_DATA, redis::GLOBAL_REDIS},
+};
+use mysql_async::{prelude::*, Params, Row, Value};
 use prost::Message;
-// #[derive(Serialize, Deserialize, Debug)]
-// enum QuestionType {
-//     Choice,
-//     Selection,
-//     Interlocution,
-//     Judge,
-// }
-
-// 题目内容
-// #[derive(Serialize, Deserialize, Debug)]
-// pub struct Question {
-//     id: i32,
-//     question_type: QuestionType,
-//     name: String,
-//     content: String,
-//     score: i32,
-// }
-
-// 大题类型
-// #[derive(Serialize, Deserialize, Debug)]
-// pub struct QuestionList {
-//     id: i32,
-//     question_type: QuestionType,
-//     name: String,
-//     content: Vec<Question>,
-//     question_num: i32,
-//     total_score: i32,
-// }
-// impl QuestionList {
-//     pub fn push(&mut self, value: Question) {
-//         self.total_score += value.score;
-//         self.question_num += 1;
-//         self.content.push(value);
-//     }
-// }
-
-// #[derive(Serialize, Deserialize, Debug)]
-// pub struct Paper {
-//     id: i32,
-//     name: String,
-//     question_num: i32,
-//     mintues: i32,
-//     status: i32,
-//     created_time: i32,
-//     updata_time: i32,
-//     content: HashMap<String, QuestionList>,
-// }
-
-
+use redis::Commands;
 
 pub trait QuestionListExt {
     fn push(&mut self, value: Question);
@@ -68,11 +22,8 @@ impl QuestionListExt for QuestionList {
     }
 }
 
-
-
 // 通过试卷id获取试卷
 pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Error> {
-
     let mut con = GLOBAL_REDIS
         .lock()
         .await
@@ -129,6 +80,11 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
     // let query = "SELECT id, name, question, mintues, status FROM paper WHERE id = ?";
     let mut conn = global_data.get_conn().await?;
     let results: Vec<Row> = conn.exec(query, (id,)).await?;
+    drop(global_data);
+    if results.is_empty() {
+        return Ok(None);
+    }
+
     if results[0].is_empty() {
         return Ok(None);
     }
@@ -184,27 +140,118 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
             );
         }
     }
-    println!("{:?}", paper);
-    let _: () = con.set(format!("paper_{}", id), Paper::encode_to_vec(&paper)).unwrap();
+    let _: () = con
+        .set(format!("paper_{}", id), Paper::encode_to_vec(&paper))
+        .unwrap();
     Ok(Some(paper))
 }
 
-// 考试内容
-pub struct PaperContent {
-    id: i32,
-    name: String,
-    question_num: i32,
-    mintues: i32,
-    status: i32,
-    created_time: i32,
+// 通过用户id查询试卷列表 (分页)
+pub async fn query_paper_list_by_id() {
+    println!("1");
+    let mut con = GLOBAL_REDIS
+        .lock()
+        .await
+        .get()
+        .expect("Failed to get Redis connection");
+    let class = query_class_by_id(2).await;
+
+    // let paperList = query_paperList_by_class(1);
 }
-impl PaperContent {
-    pub fn get_password(&self) -> &i32 {
-        &self.question_num
+
+// 通过用户id查询class
+pub async fn query_class_by_id(id:i32) -> Result<Option<i32>, mysql_async::Error>  {
+    // let mut con = GLOBAL_REDIS
+    //     .lock()
+    //     .await
+    //     .get()
+    //     .expect("Failed to get Redis connection");
+    let query: &str = "SELECT 
+            class.id
+        from
+            class
+        JOIN
+            class_stu cs on class.id = cs.class_id
+        JOIN
+            student s on cs.student_id = s.id
+        WHERE
+            s.id = ? and class.is_deleted = 1;";
+    // println!("aa{:?}",results);
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    let results: Vec<Row> = conn.exec(query, (id,)).await?;
+    drop(global_data);
+    if results.is_empty() {
+        return Ok(None);
     }
-    pub fn get_name(&self) -> &str {
-        &self.name
+
+    let mut class_ids: Vec<i32> = Vec::new();
+
+    for row in results {
+        class_ids.push(row.get("id").unwrap());
     }
+    println!("aa{:?}",class_ids);
+    let _ = query_paper_list_by_class(class_ids).await;
+
+    return Ok(None);
+    // if results.is_empty() {
+    //     return Ok(None);
+    // }
+
+}
+
+// 通过class获取试卷列表
+pub async fn query_paper_list_by_class(ids: Vec<i32>) -> Result<Option<Paper>, mysql_async::Error> {
+    // let mut con = GLOBAL_REDIS
+    //     .lock()
+    //     .await
+    //     .get()
+    //     .expect("Failed to get Redis connection");
+
+    // let result: Result<String, _> = con.get(format!("paper_{:?}", ids));
+
+    // let paper_result = match result {
+    //     Ok(data) if !data.is_empty() => {
+    //         // match serde_json::from_str::<Paper>(&data) {
+    //         //     Ok(paper) => Ok(Some(paper)),
+    //         //     Err(e) => Err(Box::new(e)),
+    //         // }
+    //         match Paper::decode(data.as_bytes()) {
+    //             Ok(paper) => Ok(Some(paper)),
+    //             Err(e) => Err(Box::new(e)),
+    //         }
+    //     }
+    //     Ok(_) => Ok(None),
+    //     Err(_) => Ok(None),
+    // };
+    
+    
+    // if let Ok(Some(paper)) = paper_result {
+    //     println!("{:?}", paper);
+    //     return Ok(Some(paper));
+    // }
+    
+    
+    let query = format!("SELECT paper.id,paper.name,paper.desc,paper.startTime,paper.createTime,paper.updateTime,paper.duration,paper.total
+        FROM paper
+                JOIN paper_class pc on paper.id = pc.paper_id
+                JOIN class c on pc.class_id = c.id
+        WHERE c.id in ({}) and paper.is_deleted = 1", ids.iter().map(|_| "?").collect::<Vec<_>>().join(", "));
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+
+    let params = Params::Positional(ids.iter().map(|id| Value::from(*id)).collect());
+    let results: Vec<Row> = conn.exec(query,params).await?;
+    drop(global_data);
+
+    if results.is_empty() {
+        return  Ok(None);
+    }
+
+
+
+    Ok(None)
 }
 
 // SELECT
@@ -226,3 +273,20 @@ impl PaperContent {
 //     e.employee_id = 123;
 
 /*  */
+
+// 用户:
+// 发送答案
+
+// 查看试卷列表
+// 可选考试
+// 添加评论
+// 查看评论
+
+// 教师
+// 新建试卷
+// 新建大题
+// 新建题目
+// 获取答案
+// 添加评论
+// 查看评论
+// 导出excel分数

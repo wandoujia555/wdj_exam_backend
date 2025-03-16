@@ -95,16 +95,21 @@ async fn post_login(data: web::Json<User>) -> impl Responder {
     }
 }
 
-async fn test() -> impl Responder {
-    let result = get_paper_by_id().await;
-    println!("{:?}", result);
+
+
+#[derive(Serialize, Deserialize)]
+struct PaperRequest {
+    id: i32,
+}
+async fn test(data:web::Json<PaperRequest>) -> impl Responder {
+    let result = get_paper_by_id(data.id).await;
     match result {
         Ok(paper) => {
 
             // serde_json::to_string(&paper).unwrap();
-            let paper_bytes = paper.encode_to_vec();
+            // let paper_bytes = paper.encode_to_vec();
             // serde_json::to_string(&paper).unwrap();
-            HttpResponse::Ok().json(paper_bytes)
+            HttpResponse::Ok().json(paper)
         },
         Err(_) => HttpResponse::Ok().json(false),
     }

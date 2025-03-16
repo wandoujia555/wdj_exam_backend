@@ -15,22 +15,6 @@ async fn make_request() {
     // 使用 cli 发送请求
     // cli.some_method().await;
 }
-// #[tokio::main]
-// async fn call_dubbo_service() -> String {
-//     let mut cli = GreeterClient::new().with_uri("http://127.0.0.1:8888".to_string());
-//     let resp: dubbo::codegen::Response<GreeterReply> = cli
-//         .greet(Request::new(GreeterRequest {
-//             name: "hello, I'm client".to_string(),
-//         }))
-//         .await
-//         .unwrap();
-
-//     let (_, msg) = resp.into_parts();
-//     println!("response: {:?}", msg);
-//     return msg.message;
-// }
-
-// 验证登录是否成功
 
 pub async fn authenticate(code: i32, password: String) -> Option<protos::login_reply::Message> {
     let mut cli = CLIENT.clone(); // 共享并重用客户端
@@ -61,14 +45,12 @@ pub async fn call_dubbo_service() -> String {
 }
 
 // 假设这是一个 Dubbo 客户端的同步调用
-pub async fn get_paper_by_id() -> Result<Paper, dubbo::status::Status> {
+pub async fn get_paper_by_id(id:i32) -> Result<Paper, dubbo::status::Status> {
     let mut cli = CLIENT.clone(); // 共享并重用客户端
     let resp: dubbo::codegen::Response<Paper> = cli
-        .get_paper_by_id(Request::new(PaperRequest { code: 1, id: 1 }))
-        .await
-        .unwrap();
-    
+        .get_paper_by_id(Request::new(PaperRequest { id }))
+        .await?;
+
     let (_, msg) = resp.into_parts();
-    println!("response: {:?}", msg);
     return Ok(msg);
 }
