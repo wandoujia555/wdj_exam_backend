@@ -125,10 +125,8 @@ message Paper {
     int32 status = 5;
     int32 created_time = 6;
     int32 update_time = 7;
-    map<string, QuestionList> content = 8;
+    repeated QuestionList content = 8;
 }
-
-
 
 
 message PaperInfo {
@@ -139,7 +137,10 @@ message PaperInfo {
     int32 status = 5;
     int32 created_time = 6;
     int32 update_time = 7;
-    string desc = 8;
+    int32 start_time = 8;
+    string desc = 9;
+    int32 total = 10;
+    int32 duration = 11;
 }
 message PaperInfoList {
     repeated PaperInfo content = 1;
@@ -149,9 +150,21 @@ message PaperInfoList {
 }
 
 
+//保存答案
+message AnswerPaper {
+    string content = 1;
+    int32 user_id = 2;
+    int32 paper_id = 3;
+}
+message AnswerReply {
+    bool is_save = 1;
+}
+
 service Greeter{
 // unary
 rpc greet(GreeterRequest) returns (GreeterReply);
 rpc authenticate(LoginRequest) returns (LoginReply);
 rpc getPaperById(PaperRequest) returns (Paper);
+rpc getPaperListById(PaperRequest) returns (PaperInfoList);
+rpc set_answer_by_id(AnswerPaper) returns (AnswerReply);
 }

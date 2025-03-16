@@ -1,4 +1,4 @@
-use crate::{api::util::{self, authenticate, call_dubbo_service, get_paper_by_id}, protos::Paper};
+use crate::{api::util::{self, authenticate, call_dubbo_service, get_paper_by_id, set_answer_by_id}, protos::{AnswerPaper, Paper}};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
 use prost::Message;
@@ -115,6 +115,26 @@ async fn test(data:web::Json<PaperRequest>) -> impl Responder {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+struct AnswerPaperUser {
+    id: i32,
+}
+async fn set_answer(data:web::Json<AnswerPaper>) -> impl Responder {
+    println!("-{:?}",data);
+    let result = set_answer_by_id(data.into_inner()).await;
+    match result {
+        Ok(paper) => {
+
+            // serde_json::to_string(&paper).unwrap();
+            // let paper_bytes = paper.encode_to_vec();
+            // serde_json::to_string(&paper).unwrap();
+            HttpResponse::Ok().json(paper)
+        },
+        Err(_) => HttpResponse::Ok().json(false),
+    }
+}
+
+
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.route("/", web::get().to(index))
         .route("/about", web::get().to(about))
@@ -122,5 +142,6 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/submit", web::post().to(submit))
         .route("/login", web::post().to(post_login))
         .route("/login", web::get().to(login))
+        .route("/setAnswer", web::post().to(set_answer))
         .route("/test", web::post().to(test));
 }

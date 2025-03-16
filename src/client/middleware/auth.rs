@@ -22,7 +22,7 @@ static SECRET_KEY: Lazy<String> =
 pub fn generate_jwt(user: &User) -> Result<String, jsonwebtoken::errors::Error> {
     // let secret_key = b"my_secret_key"; // 使用安全的密钥管理方式
     let secret_key = SECRET_KEY.as_bytes(); // 使用安全的密钥管理方式
-    let expiration = Utc::now() + Duration::minutes(60); // 设置 JWT 的过期时间
+    let expiration = Utc::now() + Duration::minutes(600); // 设置 JWT 的过期时间
 
 
     let claims = json!({

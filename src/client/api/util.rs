@@ -1,4 +1,4 @@
-use crate::protos::{self, PaperRequest};
+use crate::protos::{self, AnswerPaper, AnswerReply, PaperRequest};
 use dubbo::codegen::Request;
 use once_cell::sync::Lazy;
 use protos::{
@@ -54,3 +54,44 @@ pub async fn get_paper_by_id(id:i32) -> Result<Paper, dubbo::status::Status> {
     let (_, msg) = resp.into_parts();
     return Ok(msg);
 }
+
+pub async fn set_answer_by_id(id: AnswerPaper) -> Result<AnswerReply, dubbo::status::Status> {
+    let mut cli = CLIENT.clone(); // 共享并重用客户端
+    let resp: dubbo::codegen::Response<AnswerReply> = cli
+        .set_answer_by_id(Request::new(id))
+        .await?;
+
+    let (_, msg) = resp.into_parts();
+    return Ok(msg);
+}
+
+
+
+
+
+// 通过用户id获取试卷列表
+pub async fn get_paper_list_by_user_id(){
+    
+}
+
+// 通过试卷id获取试卷(带答案)
+pub async fn get_paper_by_id_with_answer(){
+
+}
+
+
+// 通过试卷id和用户id获取用户答卷
+pub async fn get_answer_by_paper_and_user(){
+
+}
+
+// 通过试卷id和用户id获取分数
+pub async fn get_score_by_paper_and_user(){
+
+}
+
+// 通过试卷id和用户id获取评语(分页)
+pub async fn get_comment_by_paper_and_user(){
+
+}
+

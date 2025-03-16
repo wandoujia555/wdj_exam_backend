@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use dubbo::codegen::{Request, Response};
 use dubbo::Dubbo;
 use protos::login_reply::{self, Message};
-use service::query::paper::{query_paper_list_by_id, query_paper_by_id};
+use service::query::paper::{query_paper_by_id, query_paper_list_by_id, save_answer_by_user_id};
 use service::query::user::query_student_by_code;
 
 use dotenv::dotenv;
@@ -66,7 +66,6 @@ impl Greeter for GreeterImpl {
         &self,
         _request: Request<protos::PaperRequest>,
     ) -> Result<Response<protos::Paper>, dubbo::status::Status> {
-
         query_paper_list_by_id().await;
 
         let result = match query_paper_by_id(_request.into_inner().id).await {
@@ -75,9 +74,35 @@ impl Greeter for GreeterImpl {
         };
         if let Some(value) = result {
             return Ok(Response::new(value));
-        }else {
-            return Err(dubbo::status::Status::new(dubbo::status::Code::NotFound, "Not Found".to_string()));
+        } else {
+            return Err(dubbo::status::Status::new(
+                dubbo::status::Code::NotFound,
+                "Not Found".to_string(),
+            ));
         }
+    }
+    async fn get_paper_list_by_id(
+        &self,
+        _request: Request<protos::PaperRequest>,
+    ) -> Result<Response<protos::PaperInfoList>, dubbo::status::Status> {
+        return Err(dubbo::status::Status::new(
+            dubbo::status::Code::NotFound,
+            "Not Found".to_string(),
+        ));
+    }
+    async fn set_answer_by_id(
+        &self,
+        _request: Request<protos::AnswerPaper>,
+    ) -> Result<Response<protos::AnswerReply>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        println!("{:?}",request);
+        if let Err(e) = save_answer_by_user_id(request.paper_id, request.user_id, request.content).await {
+            println!("Failed to save answer: {:?}", e);
+        }
+        return Err(dubbo::status::Status::new(
+            dubbo::status::Code::NotFound,
+            "Not Found".to_string(),
+        ));
     }
 }
 

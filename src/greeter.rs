@@ -1,3 +1,13 @@
+/// 分页信息
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PageInfo {
+    #[prost(int32, tag = "1")]
+    pub page_size: i32,
+    #[prost(int32, tag = "2")]
+    pub page_p_num: i32,
+}
 /// The request message containing the user's name.
 #[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -48,7 +58,7 @@ pub mod login_reply {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PaperRequest {
-    #[prost(int32, tag = "2")]
+    #[prost(int32, tag = "1")]
     pub id: i32,
 }
 /// 定义 Question 消息
@@ -104,11 +114,67 @@ pub struct Paper {
     pub created_time: i32,
     #[prost(int32, tag = "7")]
     pub update_time: i32,
-    #[prost(map = "string, message", tag = "8")]
-    pub content: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        QuestionList,
-    >,
+    #[prost(message, repeated, tag = "8")]
+    pub content: ::prost::alloc::vec::Vec<QuestionList>,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaperInfo {
+    #[prost(int32, tag = "1")]
+    pub id: i32,
+    #[prost(string, tag = "2")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub question_num: i32,
+    #[prost(int32, tag = "4")]
+    pub minutes: i32,
+    #[prost(int32, tag = "5")]
+    pub status: i32,
+    #[prost(int32, tag = "6")]
+    pub created_time: i32,
+    #[prost(int32, tag = "7")]
+    pub update_time: i32,
+    #[prost(int32, tag = "8")]
+    pub start_time: i32,
+    #[prost(string, tag = "9")]
+    pub desc: ::prost::alloc::string::String,
+    #[prost(int32, tag = "10")]
+    pub total: i32,
+    #[prost(int32, tag = "11")]
+    pub duration: i32,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaperInfoList {
+    #[prost(message, repeated, tag = "1")]
+    pub content: ::prost::alloc::vec::Vec<PaperInfo>,
+    #[prost(int32, tag = "2")]
+    pub total: i32,
+    #[prost(int32, tag = "3")]
+    pub page_size: i32,
+    #[prost(int32, tag = "4")]
+    pub page_num: i32,
+}
+/// 保存答案
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnswerPaper {
+    #[prost(string, tag = "1")]
+    pub content: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub user_id: i32,
+    #[prost(int32, tag = "3")]
+    pub paper_id: i32,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnswerReply {
+    #[prost(bool, tag = "1")]
+    pub is_save: bool,
 }
 /// 定义枚举类型 QuestionType
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -203,6 +269,32 @@ pub mod greeter_client {
             );
             self.inner.unary(request, codec, path).await
         }
+        pub async fn get_paper_list_by_id(
+            &mut self,
+            request: Request<super::PaperRequest>,
+        ) -> Result<Response<super::PaperInfoList>, dubbo::status::Status> {
+            let codec = dubbo::codegen::ProstCodec::<
+                super::PaperRequest,
+                super::PaperInfoList,
+            >::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/greeter.Greeter/getPaperListById",
+            );
+            self.inner.unary(request, codec, path).await
+        }
+        pub async fn set_answer_by_id(
+            &mut self,
+            request: Request<super::AnswerPaper>,
+        ) -> Result<Response<super::AnswerReply>, dubbo::status::Status> {
+            let codec = dubbo::codegen::ProstCodec::<
+                super::AnswerPaper,
+                super::AnswerReply,
+            >::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/greeter.Greeter/set_answer_by_id",
+            );
+            self.inner.unary(request, codec, path).await
+        }
     }
 }
 /// Generated server implementations.
@@ -225,6 +317,14 @@ pub mod greeter_server {
             &self,
             request: Request<super::PaperRequest>,
         ) -> Result<Response<super::Paper>, dubbo::status::Status>;
+        async fn get_paper_list_by_id(
+            &self,
+            request: Request<super::PaperRequest>,
+        ) -> Result<Response<super::PaperInfoList>, dubbo::status::Status>;
+        async fn set_answer_by_id(
+            &self,
+            request: Request<super::AnswerPaper>,
+        ) -> Result<Response<super::AnswerReply>, dubbo::status::Status>;
     }
     #[derive(Debug)]
     pub struct GreeterServer<T: Greeter, I = TripleInvoker> {
@@ -355,6 +455,80 @@ pub mod greeter_server {
                             >::default(),
                         );
                         let res = server.unary(getPaperByIdServer { inner }, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/greeter.Greeter/getPaperListById" => {
+                    #[allow(non_camel_case_types)]
+                    struct getPaperListByIdServer<T: Greeter> {
+                        inner: _Inner<T>,
+                    }
+                    impl<T: Greeter> UnarySvc<super::PaperRequest>
+                    for getPaperListByIdServer<T> {
+                        type Response = super::PaperInfoList;
+                        type Future = BoxFuture<
+                            Response<Self::Response>,
+                            dubbo::status::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: Request<super::PaperRequest>,
+                        ) -> Self::Future {
+                            let inner = self.inner.0.clone();
+                            let fut = async move {
+                                inner.get_paper_list_by_id(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let fut = async move {
+                        let mut server = TripleServer::new(
+                            dubbo::codegen::ProstCodec::<
+                                super::PaperInfoList,
+                                super::PaperRequest,
+                            >::default(),
+                        );
+                        let res = server
+                            .unary(getPaperListByIdServer { inner }, req)
+                            .await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/greeter.Greeter/set_answer_by_id" => {
+                    #[allow(non_camel_case_types)]
+                    struct set_answer_by_idServer<T: Greeter> {
+                        inner: _Inner<T>,
+                    }
+                    impl<T: Greeter> UnarySvc<super::AnswerPaper>
+                    for set_answer_by_idServer<T> {
+                        type Response = super::AnswerReply;
+                        type Future = BoxFuture<
+                            Response<Self::Response>,
+                            dubbo::status::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: Request<super::AnswerPaper>,
+                        ) -> Self::Future {
+                            let inner = self.inner.0.clone();
+                            let fut = async move {
+                                inner.set_answer_by_id(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let fut = async move {
+                        let mut server = TripleServer::new(
+                            dubbo::codegen::ProstCodec::<
+                                super::AnswerReply,
+                                super::AnswerPaper,
+                            >::default(),
+                        );
+                        let res = server
+                            .unary(set_answer_by_idServer { inner }, req)
+                            .await;
                         Ok(res)
                     };
                     Box::pin(fut)
