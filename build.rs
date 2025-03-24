@@ -3,7 +3,6 @@ fn main() {
     let path = PathBuf::from("./src");
 
     let config = dubbo_build::prost::configure().output_dir(path.clone());
-
     let mut prost_config = prost_build::Config::new();
     prost_config
         .out_dir(path.clone())

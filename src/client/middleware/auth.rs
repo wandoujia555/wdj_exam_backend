@@ -2,10 +2,11 @@ use actix_web::HttpResponse;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct User {
     pub code: i32,
     pub password: String,
+    pub login_type: i32,
 }
 use chrono::Duration;
 use jsonwebtoken::DecodingKey;

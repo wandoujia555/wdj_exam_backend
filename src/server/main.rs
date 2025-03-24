@@ -2,9 +2,14 @@ use actix_web::rt::task;
 use async_trait::async_trait;
 use dubbo::codegen::{Request, Response};
 use dubbo::Dubbo;
+use futures_util::FutureExt;
 use protos::login_reply::{self, Message};
-use service::query::paper::{query_paper_by_id, query_paper_list_by_id, save_answer_by_user_id};
-use service::query::user::query_student_by_code;
+use service::query::paper::{
+    get_answer_by_question_id, get_answer_by_user_id, get_answer_list_by_paper_id, query_class_by_id, query_paper_by_id, query_paper_list_by_id, save_answer_by_user_id, set_answer_by_user_id
+};
+use service::query::user::{
+    authenticate as user_authenticate, query_student_by_code, query_teacher_by_code,
+};
 
 use dotenv::dotenv;
 use std::{env, result};
@@ -42,13 +47,18 @@ impl Greeter for GreeterImpl {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, dubbo::status::Status> {
-        let studenta: LoginRequest = request.into_inner();
-        let result = query_student_by_code(studenta.code).await;
+        let user: LoginRequest = request.into_inner();
+        
+        let result = if user.login_type == 0 {
+            query_student_by_code(user.code).await
+        } else {
+            query_teacher_by_code(user.code).await
+        };
         let mut is_login = false;
         let mut name = String::new();
         if let Ok(value) = result {
             if let Some(value) = value {
-                is_login = value.get_password() == studenta.password;
+                is_login = value.get_password() == user.password;
                 println!("{:?}", value);
                 name = value.get_name().to_string();
             }
@@ -60,14 +70,13 @@ impl Greeter for GreeterImpl {
             } else {
                 Some(Message::IsLogin(is_login))
             },
+            login_type: 1,
         }))
     }
     async fn get_paper_by_id(
         &self,
         _request: Request<protos::PaperRequest>,
     ) -> Result<Response<protos::Paper>, dubbo::status::Status> {
-        query_paper_list_by_id().await;
-
         let result = match query_paper_by_id(_request.into_inner().id).await {
             Ok(value) => value,
             Err(_) => None,
@@ -85,25 +94,77 @@ impl Greeter for GreeterImpl {
         &self,
         _request: Request<protos::PaperRequest>,
     ) -> Result<Response<protos::PaperInfoList>, dubbo::status::Status> {
-        return Err(dubbo::status::Status::new(
-            dubbo::status::Code::NotFound,
-            "Not Found".to_string(),
-        ));
+        let request = _request.into_inner();
+        match query_paper_list_by_id(request.id).await {
+            Some(paper_list) => {
+                println!("paper_list{:?}", paper_list);
+                return Ok(Response::new(paper_list));
+            }
+            None => {
+                return Err(dubbo::status::Status::new(
+                    dubbo::status::Code::NotFound,
+                    "Not Found".to_string(),
+                ));
+            }
+        };
     }
     async fn set_answer_by_id(
         &self,
         _request: Request<protos::AnswerPaper>,
     ) -> Result<Response<protos::AnswerReply>, dubbo::status::Status> {
         let request = _request.into_inner();
-        println!("{:?}",request);
-        if let Err(e) = save_answer_by_user_id(request.paper_id, request.user_id, request.content).await {
-            println!("Failed to save answer: {:?}", e);
+        let answer_type = request.answer_type;
+        if answer_type == 1 {
+            if let Err(e) =
+                set_answer_by_user_id(request.paper_id, request.user_id, request.content).await
+            {
+                return Err(dubbo::status::Status::new(
+                    dubbo::status::Code::NotFound,
+                    "Not Save".to_string(),
+                ));
+            }
+        } else if let Err(e) =
+            save_answer_by_user_id(request.paper_id, request.user_id, request.content).await
+        {
+            return Err(dubbo::status::Status::new(
+                dubbo::status::Code::NotFound,
+                "Not Save".to_string(),
+            ));
         }
-        return Err(dubbo::status::Status::new(
-            dubbo::status::Code::NotFound,
-            "Not Found".to_string(),
-        ));
+        return Ok(Response::new(protos::AnswerReply { is_save: true }));
     }
+
+    async fn get_answer_by_id(
+        &self,
+        _request: Request<protos::AnswerRequest>,
+    ) -> Result<Response<protos::AnswerPaper>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        let data = get_answer_by_user_id(request.paper_id, request.user_id).await;
+        println!("data:{:?}",data);
+        return data
+            .map(|answer_paper| Response::new(answer_paper))
+            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
+    }
+    async fn get_answer_by_question_id(
+        &self,
+        _request: Request<protos::QuestionRequest>,
+    ) -> Result<Response<protos::QuestionReply>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        let data = get_answer_by_question_id(request.id).await;
+        return data
+            .map(|question_reply| Response::new(question_reply))
+            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
+    }
+    async fn get_answer_list_by_paper_id(
+        &self,
+        _request: Request<protos::AnswerListRequest>,
+    ) -> Result<Response<protos::AnswerListReply>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        let data = get_answer_list_by_paper_id(request.paper_id).await;
+        return data
+            .map(|question_reply| Response::new(question_reply))
+            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
+    }   
 }
 
 mod api;

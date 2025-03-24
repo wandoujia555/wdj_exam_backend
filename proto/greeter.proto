@@ -77,6 +77,7 @@ string message = 1;
 message LoginRequest {
     int32 code = 1;
     string password = 2;
+    int32 loginType = 3;
 }
 // The response message containing the greetings
 message LoginReply {
@@ -84,6 +85,7 @@ message LoginReply {
         bool is_login = 1;
         string name = 2;
     }
+    int32 loginType = 3;
 }
 
 message PaperRequest {
@@ -125,7 +127,8 @@ message Paper {
     int32 status = 5;
     int32 created_time = 6;
     int32 update_time = 7;
-    repeated QuestionList content = 8;
+    int32 start_time = 8;
+    repeated QuestionList content = 9;
 }
 
 
@@ -155,10 +158,37 @@ message AnswerPaper {
     string content = 1;
     int32 user_id = 2;
     int32 paper_id = 3;
+    int32 answerType = 4;
 }
 message AnswerReply {
     bool is_save = 1;
 }
+
+message AnswerRequest {
+    int32 user_id = 1;
+    int32 paper_id = 2;
+}
+
+message QuestionRequest {
+    int32 id = 1;
+}
+message QuestionReply{
+    int32 id = 1;
+    string answer = 2;
+}
+
+message AnswerListRequest {
+    int32 paper_id = 1;
+}
+message AnswerInfo {
+    int32 user_id = 1;
+    int32 paper_id = 2;
+    string name = 3;
+}
+message AnswerListReply{
+    repeated AnswerInfo items = 1;
+}
+
 
 service Greeter{
 // unary
@@ -167,4 +197,8 @@ rpc authenticate(LoginRequest) returns (LoginReply);
 rpc getPaperById(PaperRequest) returns (Paper);
 rpc getPaperListById(PaperRequest) returns (PaperInfoList);
 rpc set_answer_by_id(AnswerPaper) returns (AnswerReply);
+rpc get_answer_by_id(AnswerRequest) returns (AnswerPaper);
+rpc get_answer_by_question_id(QuestionRequest) returns (QuestionReply);
+rpc get_answer_list_by_paper_id(AnswerListRequest) returns (AnswerListReply);
+
 }

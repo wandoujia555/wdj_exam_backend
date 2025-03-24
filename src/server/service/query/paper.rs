@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::{
-    protos::{Paper, PaperInfo, PaperInfoList, Question, QuestionList, QuestionType},
+    protos::{
+        AnswerInfo, AnswerListReply, AnswerPaper, AnswerReply, Paper, PaperInfo, PaperInfoList,
+        Question, QuestionList, QuestionReply, QuestionType,
+    },
     service::{mysql::GLOBAL_DATA, redis::GLOBAL_REDIS},
 };
 use mysql_async::{prelude::*, Params, Row, Value};
@@ -50,10 +53,10 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
         Ok(_) => Ok(None),
         Err(_) => Ok(None),
     };
-    // println!("{:?}", paper_result);
-    if let Ok(Some(paper)) = paper_result {
-        return Ok(Some(paper));
-    }
+    // 使用缓存
+    // if let Ok(Some(paper)) = paper_result {
+    //     return Ok(Some(paper));
+    // }
     let query: &str = "SELECT
             p.id AS paper_id,
             p.duration as paper_minutes,
@@ -80,7 +83,10 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
         LEFT JOIN
             question q ON qlq.question_id = q.id  and q.is_deleted = 1
         WHERE
-            p.id = ? and p.is_deleted = 1;";
+            p.id = ? and p.is_deleted = 1
+        ORDER BY
+            pq.zIndex ASC,
+            qlq.zIndex ASC;";
     let global_data = GLOBAL_DATA.lock().await;
     // let query = "SELECT id, name, question, mintues, status FROM paper WHERE id = ?";
     let mut conn = global_data.get_conn().await?;
@@ -105,6 +111,7 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
         status: results[0].get("paper_status").unwrap(),
         created_time: results[0].get("paper_createTime").unwrap(),
         update_time: results[0].get("paper_updateTime").unwrap(),
+        start_time: results[0].get("paper_startTime").unwrap(),
         content: Vec::<QuestionList>::new(),
     };
     for row in results {
@@ -124,44 +131,66 @@ pub async fn query_paper_by_id(id: i32) -> Result<Option<Paper>, mysql_async::Er
             Some(None) => continue,
             None => continue,
         };
-
-        if let Some(item) = paper.content.iter_mut().find(|item| item.name == question_list_name) {
+        if let Some(item) = paper
+            .content
+            .iter_mut()
+            .find(|item| item.name == question_list_name)
+        {
             item.push(question);
         } else {
-            paper.content.push(
-                QuestionList {
-                    id: row.get("questionList_id").unwrap(),
-                    question_type: QuestionType::Choice as i32,
-                    name: question_list_name.clone(),
-                    content: Vec::<Question>::new(),
-                    question_num: 0,
-                    total_score: 0,
-                },
-            );
+            let mut question_list = QuestionList {
+                id: row.get("questionList_id").unwrap(),
+                question_type: row.get("question_type").unwrap(),
+                name: question_list_name.clone(),
+                content: Vec::<Question>::new(),
+                question_num: 0,
+                total_score: 0,
+            };
+            question_list.push(question);
+            paper.content.push(question_list);
         }
     }
     // println!("11{:?}",serde_json::to_string(&paper).unwrap());
     let _: () = con
-        .set(format!("paper_{}", id), serde_json::to_string(&paper).unwrap())
+        .set(
+            format!("paper_{}", id),
+            serde_json::to_string(&paper).unwrap(),
+        )
         .unwrap();
     Ok(Some(paper))
 }
 
 // 通过用户id查询试卷列表 (分页)
-pub async fn query_paper_list_by_id() {
-    println!("1");
-    let mut con = GLOBAL_REDIS
-        .lock()
-        .await
-        .get()
-        .expect("Failed to get Redis connection");
-    let class = query_class_by_id(2).await;
-
+pub async fn query_paper_list_by_id(id: i32) -> Option<PaperInfoList> {
+    let class_ids = query_class_by_id(id).await;
+    let paper_list = match class_ids {
+        Ok(Some(ids)) => query_paper_list_by_class(ids).await,
+        Ok(None) => Ok(None),
+        Err(e) => {
+            // Handle the error case
+            eprintln!("Error querying class by id: {:?}", e);
+            Ok(None)
+        }
+    };
+    match paper_list {
+        Ok(Some(list)) => {
+            return Some(list);
+        }
+        Ok(None) => {
+            return None;
+            // handle the Ok(None) case
+        }
+        Err(e) => {
+            // handle the Err(e) case
+            eprintln!("Error querying paper list by class: {:?}", e);
+            return None;
+        }
+    };
     // let paperList = query_paperList_by_class(1);
 }
 
 // 通过用户id查询class
-pub async fn query_class_by_id(id: i32) -> Result<Option<i32>, mysql_async::Error> {
+pub async fn query_class_by_id(id: i32) -> Result<Option<Vec<i32>>, mysql_async::Error> {
     // let mut con = GLOBAL_REDIS
     //     .lock()
     //     .await
@@ -192,16 +221,16 @@ pub async fn query_class_by_id(id: i32) -> Result<Option<i32>, mysql_async::Erro
         class_ids.push(row.get("id").unwrap());
     }
     println!("aa{:?}", class_ids);
-    let _ = query_paper_list_by_class(class_ids).await;
-
-    return Ok(None);
+    return Ok(Some(class_ids));
     // if results.is_empty() {
     //     return Ok(None);
     // }
 }
 
 // 通过class获取试卷列表
-pub async fn query_paper_list_by_class(ids: Vec<i32>) -> Result<Option<Paper>, mysql_async::Error> {
+pub async fn query_paper_list_by_class(
+    ids: Vec<i32>,
+) -> Result<Option<PaperInfoList>, mysql_async::Error> {
     let query = format!(
         "SELECT paper.state,paper.id,paper.name,paper.desc,
         UNIX_TIMESTAMP(paper.updateTime) AS updateTime,
@@ -225,16 +254,15 @@ pub async fn query_paper_list_by_class(ids: Vec<i32>) -> Result<Option<Paper>, m
         .into_iter()
         .map(PaperInfo::from_row)
         .collect();
-    let paperList = PaperInfoList {
+    let paper_list = PaperInfoList {
         content: results,
         total: 1,
         page_size: 1,
         page_num: 1,
     };
     drop(global_data);
-    Ok(None)
+    return Ok(Some(paper_list));
 }
-
 pub trait PaperInfoExt {
     fn from_row(row: Row) -> Self;
 }
@@ -259,9 +287,29 @@ impl PaperInfoExt for PaperInfo {
 // 用户:
 // 提交发送答卷
 
-pub async fn save_answer_by_user_id(paper_id:i32,user_id:i32,content:String) -> Result<bool, mysql_async::Error>{
-    let query = "INSERT INTO answer (content, question_id, user_id, paper_id) VALUES (?, 1, ?, ?)";
-    
+pub trait AnswerExt {
+    fn from_row(row: Row) -> Self;
+}
+impl AnswerExt for AnswerPaper {
+    fn from_row(row: Row) -> Self {
+        AnswerPaper {
+            user_id: row.get("user_id").unwrap(),
+            paper_id: row.get("paper_id").unwrap(),
+            content: row.get("content").unwrap(),
+            answer_type: 1,
+        }
+    }
+}
+
+pub async fn save_answer_by_user_id(
+    paper_id: i32,
+    user_id: i32,
+    content: String,
+) -> Result<bool, mysql_async::Error> {
+    let query = "INSERT INTO answer (content, question_id, user_id, paper_id) VALUES (?, 1, ?, ?)
+        ON DUPLICATE KEY UPDATE content = VALUES(content);
+    ";
+
     let global_data = GLOBAL_DATA.lock().await;
     let mut conn = global_data.get_conn().await?;
     conn.exec_drop(query, (content, user_id, paper_id)).await?;
@@ -269,6 +317,133 @@ pub async fn save_answer_by_user_id(paper_id:i32,user_id:i32,content:String) -> 
     return Ok(true);
 }
 
+pub async fn set_answer_by_user_id(
+    paper_id: i32,
+    user_id: i32,
+    outcome: String,
+) -> Result<bool, mysql_async::Error> {
+    let query = "INSERT INTO answer (content, question_id, user_id, paper_id) VALUES (?, 1, ?, ?)
+        ON DUPLICATE KEY UPDATE content = VALUES(content);
+    ";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    conn.exec_drop(query, (outcome, user_id, paper_id)).await?;
+
+    drop(global_data);
+    return Ok(true);
+}
+// 获取用户答案
+pub async fn get_answer_by_user_id(
+    paper_id: i32,
+    user_id: i32,
+) -> Result<AnswerPaper, mysql_async::Error> {
+    let query = "SELECT content,paper_id,user_id FROM answer WHERE paper_id = ? AND user_id = ?";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    let result: AnswerPaper = conn
+        .exec_first(query, (paper_id, user_id))
+        .await?
+        .map(AnswerPaper::from_row)
+        .unwrap();
+    drop(global_data);
+    return Ok(result);
+}
+
+pub trait QuestionExt {
+    fn from_row(row: Row) -> Self;
+}
+impl QuestionExt for QuestionReply {
+    fn from_row(row: Row) -> Self {
+        QuestionReply {
+            id: row.get("id").unwrap(),
+            answer: row.get("answer").unwrap(),
+        }
+    }
+}
+
+// 获取题目的答案
+pub async fn get_answer_by_question_id(id: i32) -> Result<QuestionReply, mysql_async::Error> {
+    let query = "SELECT answer,id FROM question WHERE id = ?";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    let result: QuestionReply = conn
+        .exec_first(query, (id,))
+        .await?
+        .map(QuestionReply::from_row)
+        .unwrap();
+    drop(global_data);
+    return Ok(result);
+}
+
+// 设置用户试卷表状态
+pub async fn set_paper_state_user_by_id(
+    paper_id: i32,
+    user_id: i32,
+    content: String,
+) -> Result<bool, mysql_async::Error> {
+    let query = "INSERT INTO papers (paper_id, student_id, status)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE status = VALUES(status);";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    conn.exec_drop(query, (paper_id, user_id, content)).await?;
+    drop(global_data);
+    return Ok(true);
+}
+
+// 获取试卷的用户状态
+pub async fn get_paper_user_by_id(
+    paper_id: i32,
+    user_id: i32,
+    content: String,
+) -> Result<bool, mysql_async::Error> {
+    let query = "INSERT INTO papers (paper_id, student_id, status)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE status = VALUES(status);";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    conn.exec_drop(query, (paper_id, user_id, content)).await?;
+    drop(global_data);
+    return Ok(true);
+}
+
+pub trait AnswerInfoExt {
+    fn from_row(row: Row) -> Self;
+}
+impl AnswerInfoExt for AnswerInfo {
+    fn from_row(row: Row) -> Self {
+        AnswerInfo {
+            user_id: row.get("user_id").unwrap(),
+            paper_id: row.get("paper_id").unwrap(),
+            name: row.get("name").unwrap(),
+        }
+    }
+}
+// 通过试卷id获取answer提交列表
+pub async fn get_answer_list_by_paper_id(id: i32) -> Result<AnswerListReply, mysql_async::Error> {
+    let query = "SELECT user_id, stu.name AS student_name, paper_id, status
+        FROM answer an
+        JOIN student stu
+        ON stu.id = an.user_id
+        WHERE paper_id = ?;";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    let results: Vec<AnswerInfo> = conn
+        .exec(query, (id,))
+        .await?
+        .into_iter()
+        .map(AnswerInfo::from_row)
+        .collect();
+    drop(global_data);
+    let reply = AnswerListReply { items: results };
+    return Ok(reply);
+}
 // 查看试卷列表
 // 可选考试
 // 添加评论
