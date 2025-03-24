@@ -176,6 +176,10 @@ pub struct AnswerPaper {
     pub paper_id: i32,
     #[prost(int32, tag = "4")]
     pub answer_type: i32,
+    #[prost(int32, tag = "5")]
+    pub status: i32,
+    #[prost(int32, tag = "6")]
+    pub scores: i32,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -226,6 +230,10 @@ pub struct AnswerInfo {
     pub paper_id: i32,
     #[prost(string, tag = "3")]
     pub name: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub score: i32,
+    #[prost(int32, tag = "5")]
+    pub status: i32,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]

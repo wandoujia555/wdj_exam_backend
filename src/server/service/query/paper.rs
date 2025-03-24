@@ -296,6 +296,8 @@ impl AnswerExt for AnswerPaper {
             user_id: row.get("user_id").unwrap(),
             paper_id: row.get("paper_id").unwrap(),
             content: row.get("content").unwrap(),
+            scores: row.get("scores").unwrap(),
+            status: row.get("status").unwrap(),
             answer_type: 1,
         }
     }
@@ -305,14 +307,17 @@ pub async fn save_answer_by_user_id(
     paper_id: i32,
     user_id: i32,
     content: String,
+    status: i32,
+    scores: i32,
 ) -> Result<bool, mysql_async::Error> {
-    let query = "INSERT INTO answer (content, question_id, user_id, paper_id) VALUES (?, 1, ?, ?)
-        ON DUPLICATE KEY UPDATE content = VALUES(content);
+    let query = "INSERT INTO answer (content, question_id, user_id, paper_id, status, scores) VALUES (?, 1, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE content = VALUES(content), status = VALUES(status), scores = VALUES(scores);
     ";
 
     let global_data = GLOBAL_DATA.lock().await;
     let mut conn = global_data.get_conn().await?;
-    conn.exec_drop(query, (content, user_id, paper_id)).await?;
+    conn.exec_drop(query, (content, user_id, paper_id, status, scores))
+        .await?;
     drop(global_data);
     return Ok(true);
 }
@@ -338,7 +343,7 @@ pub async fn get_answer_by_user_id(
     paper_id: i32,
     user_id: i32,
 ) -> Result<AnswerPaper, mysql_async::Error> {
-    let query = "SELECT content,paper_id,user_id FROM answer WHERE paper_id = ? AND user_id = ?";
+    let query = "SELECT content,paper_id,user_id,scores,status FROM answer WHERE paper_id = ? AND user_id = ?";
 
     let global_data = GLOBAL_DATA.lock().await;
     let mut conn = global_data.get_conn().await?;
@@ -421,12 +426,14 @@ impl AnswerInfoExt for AnswerInfo {
             user_id: row.get("user_id").unwrap(),
             paper_id: row.get("paper_id").unwrap(),
             name: row.get("student_name").unwrap(),
+            score: row.get("scores").unwrap(),
+            status: row.get("status").unwrap(),
         }
     }
 }
 // 通过试卷id获取answer提交列表
 pub async fn get_answer_list_by_paper_id(id: i32) -> Result<AnswerListReply, mysql_async::Error> {
-    let query = "SELECT user_id, stu.name AS student_name, paper_id, status
+    let query = "SELECT user_id, stu.name AS student_name, paper_id, an.status, an.scores
         FROM answer an
         JOIN student stu
         ON stu.id = an.user_id
@@ -452,8 +459,8 @@ pub async fn get_user_exam_status(
     paper_id: i32,
 ) -> Result<PaperUserInfoReply, mysql_async::Error> {
     let query = "select paper_stu.status as paper_user_status,
-        paper.name,paper.duration,paper.duration as minutes,paper.status,
-        paper.startTime as start_time,paper.desc,total,
+        paper.name,paper.duration,paper.duration as minutes,paper.state as status,
+        UNIX_TIMESTAMP(paper_stu.startTime) as start_time,paper.desc,total,
         toleranceTime as tolerance_time from paper_stu 
         join paper on paper_stu.paper_id = paper.id 
         join student s on s.id = paper_stu.student_id

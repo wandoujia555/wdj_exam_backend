@@ -116,17 +116,18 @@ impl Greeter for GreeterImpl {
     ) -> Result<Response<protos::AnswerReply>, dubbo::status::Status> {
         let request = _request.into_inner();
         let answer_type = request.answer_type;
-        if answer_type == 1 {
-            if let Err(e) =
-                set_answer_by_user_id(request.paper_id, request.user_id, request.content).await
-            {
-                return Err(dubbo::status::Status::new(
-                    dubbo::status::Code::NotFound,
-                    "Not Save".to_string(),
-                ));
-            }
-        } else if let Err(e) =
-            save_answer_by_user_id(request.paper_id, request.user_id, request.content).await
+        // if answer_type == 1 {
+        //     if let Err(e) =
+        //         set_answer_by_user_id(request.paper_id, request.user_id, request.content).await
+        //     {
+        //         return Err(dubbo::status::Status::new(
+        //             dubbo::status::Code::NotFound,
+        //             "Not Save".to_string(),
+        //         ));
+        //     }
+        // } else 
+        if let Err(e) =
+            save_answer_by_user_id(request.paper_id, request.user_id, request.content, request.status, request.scores).await
         {
             return Err(dubbo::status::Status::new(
                 dubbo::status::Code::NotFound,
@@ -172,7 +173,6 @@ impl Greeter for GreeterImpl {
         _request: Request<protos::AnswerListRequest>,
     ) -> Result<Response<protos::AnswerListReply>, dubbo::status::Status> {
         let request = _request.into_inner();
-        println!("asdasd{}", request.paper_id);
         let data = get_answer_list_by_paper_id(request.paper_id).await;
         return data
             .map(|question_reply| Response::new(question_reply))
@@ -188,7 +188,6 @@ impl Greeter for GreeterImpl {
         _request: Request<protos::PaperUserInfoRequest>,
     ) -> Result<Response<protos::PaperUserInfoReply>, dubbo::status::Status> {
         let request = _request.into_inner();
-        println!("asdasd{}", request.paper_id);
         let data = get_user_exam_status(request.user_id, request.paper_id).await;
         return data
             .map(|question_reply| Response::new(question_reply))
@@ -204,7 +203,6 @@ impl Greeter for GreeterImpl {
         _request: Request<protos::SetUserInfoRequest>,
     ) -> Result<Response<protos::SetUserInfoReply>, dubbo::status::Status> {
         let request = _request.into_inner();
-        println!("asdasd{}", request.paper_id);
         let data = set_user_exam_status(request.user_id, request.paper_id, request.status).await;
         return data
             .map(|is_success| {

@@ -53,7 +53,6 @@ async fn submit() -> impl Responder {
 }
 
 async fn login() -> impl Responder {
-    println!("asdasd");
     HttpResponse::Ok().body("Form submasdasdaditted successfully!")
 }
 
@@ -176,6 +175,7 @@ async fn get_answer_list_by_paper_id_handler(data: web::Json<AnswerListRequest>)
         Err(_) => HttpResponse::Ok().json(false),
     }
 }
+
 async  fn get_user_exam_status_handler(data: web::Json<PaperUserInfoRequest>)-> impl Responder{
     let result = get_user_exam_status(data.into_inner()).await;
     match result {
@@ -183,6 +183,7 @@ async  fn get_user_exam_status_handler(data: web::Json<PaperUserInfoRequest>)-> 
         Err(_) => HttpResponse::Ok().json(false),
     }
 }
+
 async  fn set_user_exam_status_handler(data: web::Json<SetUserInfoRequest>)-> impl Responder{
     let result = set_user_exam_status(data.into_inner()).await;
     match result {
