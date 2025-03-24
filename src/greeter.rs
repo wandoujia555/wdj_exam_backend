@@ -234,6 +234,59 @@ pub struct AnswerListReply {
     #[prost(message, repeated, tag = "1")]
     pub items: ::prost::alloc::vec::Vec<AnswerInfo>,
 }
+/// 通过 user_id paper_id 查询用户考试状态列表(返回试卷 Info 和 paper_user_status )
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaperUserInfoRequest {
+    #[prost(int32, tag = "1")]
+    pub user_id: i32,
+    #[prost(int32, tag = "2")]
+    pub paper_id: i32,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaperUserInfoReply {
+    #[prost(int32, tag = "1")]
+    pub paper_user_status: i32,
+    /// 考试名称
+    #[prost(string, tag = "2")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub minutes: i32,
+    #[prost(int32, tag = "4")]
+    pub status: i32,
+    #[prost(int32, tag = "5")]
+    pub start_time: i32,
+    #[prost(string, tag = "6")]
+    pub desc: ::prost::alloc::string::String,
+    #[prost(int32, tag = "7")]
+    pub total: i32,
+    #[prost(int32, tag = "8")]
+    pub duration: i32,
+    #[prost(int32, tag = "9")]
+    pub tolerance_time: i32,
+}
+/// 通过 user_id paper_id 设置用户考试状态列表(返回试卷 Info 和 paper_user_status )
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SetUserInfoRequest {
+    #[prost(int32, tag = "1")]
+    pub user_id: i32,
+    #[prost(int32, tag = "2")]
+    pub paper_id: i32,
+    #[prost(int32, tag = "3")]
+    pub status: i32,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SetUserInfoReply {
+    #[prost(bool, tag = "1")]
+    pub is_save: bool,
+}
 /// 定义枚举类型 QuestionType
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -392,6 +445,32 @@ pub mod greeter_client {
             );
             self.inner.unary(request, codec, path).await
         }
+        pub async fn get_user_exam_status(
+            &mut self,
+            request: Request<super::PaperUserInfoRequest>,
+        ) -> Result<Response<super::PaperUserInfoReply>, dubbo::status::Status> {
+            let codec = dubbo::codegen::ProstCodec::<
+                super::PaperUserInfoRequest,
+                super::PaperUserInfoReply,
+            >::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/greeter.Greeter/get_user_exam_status",
+            );
+            self.inner.unary(request, codec, path).await
+        }
+        pub async fn set_user_exam_status(
+            &mut self,
+            request: Request<super::SetUserInfoRequest>,
+        ) -> Result<Response<super::SetUserInfoReply>, dubbo::status::Status> {
+            let codec = dubbo::codegen::ProstCodec::<
+                super::SetUserInfoRequest,
+                super::SetUserInfoReply,
+            >::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/greeter.Greeter/set_user_exam_status",
+            );
+            self.inner.unary(request, codec, path).await
+        }
     }
 }
 /// Generated server implementations.
@@ -434,6 +513,14 @@ pub mod greeter_server {
             &self,
             request: Request<super::AnswerListRequest>,
         ) -> Result<Response<super::AnswerListReply>, dubbo::status::Status>;
+        async fn get_user_exam_status(
+            &self,
+            request: Request<super::PaperUserInfoRequest>,
+        ) -> Result<Response<super::PaperUserInfoReply>, dubbo::status::Status>;
+        async fn set_user_exam_status(
+            &self,
+            request: Request<super::SetUserInfoRequest>,
+        ) -> Result<Response<super::SetUserInfoReply>, dubbo::status::Status>;
     }
     #[derive(Debug)]
     pub struct GreeterServer<T: Greeter, I = TripleInvoker> {
@@ -754,6 +841,90 @@ pub mod greeter_server {
                         let res = server
                             .unary(
                                 get_answer_list_by_paper_idServer {
+                                    inner,
+                                },
+                                req,
+                            )
+                            .await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/greeter.Greeter/get_user_exam_status" => {
+                    #[allow(non_camel_case_types)]
+                    struct get_user_exam_statusServer<T: Greeter> {
+                        inner: _Inner<T>,
+                    }
+                    impl<T: Greeter> UnarySvc<super::PaperUserInfoRequest>
+                    for get_user_exam_statusServer<T> {
+                        type Response = super::PaperUserInfoReply;
+                        type Future = BoxFuture<
+                            Response<Self::Response>,
+                            dubbo::status::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: Request<super::PaperUserInfoRequest>,
+                        ) -> Self::Future {
+                            let inner = self.inner.0.clone();
+                            let fut = async move {
+                                inner.get_user_exam_status(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let fut = async move {
+                        let mut server = TripleServer::new(
+                            dubbo::codegen::ProstCodec::<
+                                super::PaperUserInfoReply,
+                                super::PaperUserInfoRequest,
+                            >::default(),
+                        );
+                        let res = server
+                            .unary(
+                                get_user_exam_statusServer {
+                                    inner,
+                                },
+                                req,
+                            )
+                            .await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/greeter.Greeter/set_user_exam_status" => {
+                    #[allow(non_camel_case_types)]
+                    struct set_user_exam_statusServer<T: Greeter> {
+                        inner: _Inner<T>,
+                    }
+                    impl<T: Greeter> UnarySvc<super::SetUserInfoRequest>
+                    for set_user_exam_statusServer<T> {
+                        type Response = super::SetUserInfoReply;
+                        type Future = BoxFuture<
+                            Response<Self::Response>,
+                            dubbo::status::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: Request<super::SetUserInfoRequest>,
+                        ) -> Self::Future {
+                            let inner = self.inner.0.clone();
+                            let fut = async move {
+                                inner.set_user_exam_status(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let fut = async move {
+                        let mut server = TripleServer::new(
+                            dubbo::codegen::ProstCodec::<
+                                super::SetUserInfoReply,
+                                super::SetUserInfoRequest,
+                            >::default(),
+                        );
+                        let res = server
+                            .unary(
+                                set_user_exam_statusServer {
                                     inner,
                                 },
                                 req,

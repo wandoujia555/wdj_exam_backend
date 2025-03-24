@@ -1,4 +1,4 @@
-use crate::protos::{self, AnswerListReply, AnswerListRequest, AnswerPaper, AnswerReply, AnswerRequest, PaperInfoList, PaperRequest, QuestionReply, QuestionRequest};
+use crate::protos::{self, AnswerListReply, AnswerListRequest, AnswerPaper, AnswerReply, AnswerRequest, PaperInfoList, PaperRequest, PaperUserInfoReply, PaperUserInfoRequest, QuestionReply, QuestionRequest, SetUserInfoReply, SetUserInfoRequest};
 use dubbo::codegen::Request;
 use once_cell::sync::Lazy;
 use protos::{
@@ -108,6 +108,31 @@ pub async fn get_answer_list_by_paper_id(data: AnswerListRequest) -> Result<Answ
     let (_, msg) = resp.into_parts();
     return Ok(msg);
 }
+
+
+
+// rpc get_user_exam_status(PaperUserInfoRequest) returns (PaperUserInfoReply);
+// rpc set_user_exam_status(SetUserInfoRequest) returns (SetUserInfoReply);
+pub async fn get_user_exam_status(data:PaperUserInfoRequest ) -> Result<PaperUserInfoReply, dubbo::status::Status> {
+    let mut cli = CLIENT.clone(); // 共享并重用客户端
+    let resp: dubbo::codegen::Response<PaperUserInfoReply> = cli
+        .get_user_exam_status(Request::new(data))
+        .await?;
+    let (_, msg) = resp.into_parts();
+    return Ok(msg);
+}
+
+pub async fn set_user_exam_status(data: SetUserInfoRequest) -> Result<SetUserInfoReply, dubbo::status::Status> {
+    let mut cli = CLIENT.clone(); // 共享并重用客户端
+    let resp: dubbo::codegen::Response<SetUserInfoReply> = cli
+        .set_user_exam_status(Request::new(data))
+        .await?;
+    let (_, msg) = resp.into_parts();
+    return Ok(msg);
+}
+
+
+
 
 // SELECT user_id,stu.name,paper_id,status
 // FROM answer an

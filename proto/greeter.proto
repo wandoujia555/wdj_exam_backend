@@ -190,6 +190,33 @@ message AnswerListReply{
 }
 
 
+// 通过 user_id paper_id 查询用户考试状态列表(返回试卷 Info 和 paper_user_status )
+message PaperUserInfoRequest {
+    int32 user_id = 1;
+    int32 paper_id = 2;
+}
+message PaperUserInfoReply {
+    int32 paper_user_status = 1;
+    string name = 2;//考试名称
+    int32 minutes = 3;
+    int32 status = 4;
+    int32 start_time = 5;
+    string desc = 6;
+    int32 total = 7;
+    int32 duration = 8;
+    int32 tolerance_time = 9;
+}
+// 通过 user_id paper_id 设置用户考试状态列表(返回试卷 Info 和 paper_user_status )
+message SetUserInfoRequest {
+    int32 user_id = 1;
+    int32 paper_id = 2;
+    int32 status = 3;
+}
+message SetUserInfoReply {
+    bool is_save = 1;
+}
+
+
 service Greeter{
 // unary
 rpc greet(GreeterRequest) returns (GreeterReply);
@@ -200,5 +227,6 @@ rpc set_answer_by_id(AnswerPaper) returns (AnswerReply);
 rpc get_answer_by_id(AnswerRequest) returns (AnswerPaper);
 rpc get_answer_by_question_id(QuestionRequest) returns (QuestionReply);
 rpc get_answer_list_by_paper_id(AnswerListRequest) returns (AnswerListReply);
-
+rpc get_user_exam_status(PaperUserInfoRequest) returns (PaperUserInfoReply);
+rpc set_user_exam_status(SetUserInfoRequest) returns (SetUserInfoReply);
 }

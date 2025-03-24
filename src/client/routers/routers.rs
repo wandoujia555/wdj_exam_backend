@@ -1,8 +1,8 @@
 use crate::{
     api::util::{
-        self, authenticate, call_dubbo_service, get_answer_by_id, get_answer_by_question_id, get_answer_list_by_paper_id, get_paper_by_id, get_paper_list_by_user_id, set_answer_by_id
+        self, authenticate, call_dubbo_service, get_answer_by_id, get_answer_by_question_id, get_answer_list_by_paper_id, get_paper_by_id, get_paper_list_by_user_id, get_user_exam_status, set_answer_by_id, set_user_exam_status
     },
-    protos::{AnswerListRequest, AnswerPaper, AnswerRequest, Paper, QuestionRequest},
+    protos::{AnswerListRequest, AnswerPaper, AnswerRequest, Paper, PaperUserInfoRequest, QuestionRequest, SetUserInfoRequest},
 };
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
@@ -176,6 +176,21 @@ async fn get_answer_list_by_paper_id_handler(data: web::Json<AnswerListRequest>)
         Err(_) => HttpResponse::Ok().json(false),
     }
 }
+async  fn get_user_exam_status_handler(data: web::Json<PaperUserInfoRequest>)-> impl Responder{
+    let result = get_user_exam_status(data.into_inner()).await;
+    match result {
+        Ok(list) => return HttpResponse::Ok().json(list),
+        Err(_) => HttpResponse::Ok().json(false),
+    }
+}
+async  fn set_user_exam_status_handler(data: web::Json<SetUserInfoRequest>)-> impl Responder{
+    let result = set_user_exam_status(data.into_inner()).await;
+    match result {
+        Ok(list) => return HttpResponse::Ok().json(list),
+        Err(_) => HttpResponse::Ok().json(false),
+    }
+}
+
 
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -190,5 +205,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/paper", web::post().to(paper))
         .route("/test", web::post().to(get_paper_list_by_id))
         .route("/getQuestion", web::post().to(get_answer_by_question_id_handler))
+        .route("/getAnswerInfoList", web::post().to(get_answer_list_by_paper_id_handler))
+        .route("/getPaperUser", web::post().to(get_user_exam_status_handler))
+        .route("/setPaperUser", web::post().to(set_user_exam_status_handler))
         .route("/getAnswer", web::post().to(get_answer));
 }

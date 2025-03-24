@@ -5,7 +5,9 @@ use dubbo::Dubbo;
 use futures_util::FutureExt;
 use protos::login_reply::{self, Message};
 use service::query::paper::{
-    get_answer_by_question_id, get_answer_by_user_id, get_answer_list_by_paper_id, query_class_by_id, query_paper_by_id, query_paper_list_by_id, save_answer_by_user_id, set_answer_by_user_id
+    get_answer_by_question_id, get_answer_by_user_id, get_answer_list_by_paper_id,
+    get_user_exam_status, query_class_by_id, query_paper_by_id, query_paper_list_by_id,
+    save_answer_by_user_id, set_answer_by_user_id, set_user_exam_status,
 };
 use service::query::user::{
     authenticate as user_authenticate, query_student_by_code, query_teacher_by_code,
@@ -48,7 +50,7 @@ impl Greeter for GreeterImpl {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, dubbo::status::Status> {
         let user: LoginRequest = request.into_inner();
-        
+
         let result = if user.login_type == 0 {
             query_student_by_code(user.code).await
         } else {
@@ -140,10 +142,15 @@ impl Greeter for GreeterImpl {
     ) -> Result<Response<protos::AnswerPaper>, dubbo::status::Status> {
         let request = _request.into_inner();
         let data = get_answer_by_user_id(request.paper_id, request.user_id).await;
-        println!("data:{:?}",data);
+        println!("data:{:?}", data);
         return data
             .map(|answer_paper| Response::new(answer_paper))
-            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
+            .map_err(|_| {
+                dubbo::status::Status::new(
+                    dubbo::status::Code::Internal,
+                    "Internal Error".to_string(),
+                )
+            });
     }
     async fn get_answer_by_question_id(
         &self,
@@ -153,18 +160,65 @@ impl Greeter for GreeterImpl {
         let data = get_answer_by_question_id(request.id).await;
         return data
             .map(|question_reply| Response::new(question_reply))
-            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
+            .map_err(|_| {
+                dubbo::status::Status::new(
+                    dubbo::status::Code::Internal,
+                    "Internal Error".to_string(),
+                )
+            });
     }
     async fn get_answer_list_by_paper_id(
         &self,
         _request: Request<protos::AnswerListRequest>,
     ) -> Result<Response<protos::AnswerListReply>, dubbo::status::Status> {
         let request = _request.into_inner();
+        println!("asdasd{}", request.paper_id);
         let data = get_answer_list_by_paper_id(request.paper_id).await;
         return data
             .map(|question_reply| Response::new(question_reply))
-            .map_err(|_| dubbo::status::Status::new(dubbo::status::Code::Internal, "Internal Error".to_string()));
-    }   
+            .map_err(|_| {
+                dubbo::status::Status::new(
+                    dubbo::status::Code::Internal,
+                    "Internal Error".to_string(),
+                )
+            });
+    }
+    async fn get_user_exam_status(
+        &self,
+        _request: Request<protos::PaperUserInfoRequest>,
+    ) -> Result<Response<protos::PaperUserInfoReply>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        println!("asdasd{}", request.paper_id);
+        let data = get_user_exam_status(request.user_id, request.paper_id).await;
+        return data
+            .map(|question_reply| Response::new(question_reply))
+            .map_err(|_| {
+                dubbo::status::Status::new(
+                    dubbo::status::Code::Internal,
+                    "Internal Error".to_string(),
+                )
+            });
+    }
+    async fn set_user_exam_status(
+        &self,
+        _request: Request<protos::SetUserInfoRequest>,
+    ) -> Result<Response<protos::SetUserInfoReply>, dubbo::status::Status> {
+        let request = _request.into_inner();
+        println!("asdasd{}", request.paper_id);
+        let data = set_user_exam_status(request.user_id, request.paper_id, request.status).await;
+        return data
+            .map(|is_success| {
+                Response::new(protos::SetUserInfoReply {
+                    is_save: is_success,
+                })
+            })
+            .map_err(|_| {
+                dubbo::status::Status::new(
+                    dubbo::status::Code::Internal,
+                    "Internal Error".to_string(),
+                )
+            });
+    }
 }
 
 mod api;

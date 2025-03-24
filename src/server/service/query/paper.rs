@@ -7,7 +7,7 @@ use serde_json::json;
 use crate::{
     protos::{
         AnswerInfo, AnswerListReply, AnswerPaper, AnswerReply, Paper, PaperInfo, PaperInfoList,
-        Question, QuestionList, QuestionReply, QuestionType,
+        PaperUserInfoReply, Question, QuestionList, QuestionReply, QuestionType,
     },
     service::{mysql::GLOBAL_DATA, redis::GLOBAL_REDIS},
 };
@@ -420,7 +420,7 @@ impl AnswerInfoExt for AnswerInfo {
         AnswerInfo {
             user_id: row.get("user_id").unwrap(),
             paper_id: row.get("paper_id").unwrap(),
-            name: row.get("name").unwrap(),
+            name: row.get("student_name").unwrap(),
         }
     }
 }
@@ -444,6 +444,67 @@ pub async fn get_answer_list_by_paper_id(id: i32) -> Result<AnswerListReply, mys
     let reply = AnswerListReply { items: results };
     return Ok(reply);
 }
+
+// 通过 user_id paper_id 查询用户考试状态列表(返回试卷Info和paper_user_status)
+
+pub async fn get_user_exam_status(
+    user_id: i32,
+    paper_id: i32,
+) -> Result<PaperUserInfoReply, mysql_async::Error> {
+    let query = "select paper_stu.status as paper_user_status,
+        paper.name,paper.duration,paper.duration as minutes,paper.status,
+        paper.startTime as start_time,paper.desc,total,
+        toleranceTime as tolerance_time from paper_stu 
+        join paper on paper_stu.paper_id = paper.id 
+        join student s on s.id = paper_stu.student_id
+        where paper_stu.paper_id = ? and paper_stu.student_id = ?";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    let result: Option<Row> = conn.exec_first(query, (paper_id, user_id)).await?;
+    drop(global_data);
+
+    if let Some(row) = result {
+        let reply = PaperUserInfoReply {
+            paper_user_status: row.get("paper_user_status").unwrap(),
+            name: row.get("name").unwrap(),
+            duration: row.get("duration").unwrap(),
+            minutes: row.get("minutes").unwrap(),
+            status: row.get("status").unwrap(),
+            start_time: row.get("start_time").unwrap(),
+            desc: row.get("desc").unwrap(),
+            total: row.get("total").unwrap(),
+            tolerance_time: row.get("tolerance_time").unwrap(),
+        };
+        Ok(reply)
+    } else {
+        Err(mysql_async::Error::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No data found",
+        )))
+    }
+}
+
+// 通过 user_id paper_id 设置用户考试状态列表(返回试卷Info和paper_user_status)
+
+pub async fn set_user_exam_status(
+    user_id: i32,
+    paper_id: i32,
+    status: i32,
+) -> Result<bool, mysql_async::Error> {
+    let query = "INSERT INTO paper_stu (paper_id, student_id, status)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE status = VALUES(status);";
+
+    let global_data = GLOBAL_DATA.lock().await;
+    let mut conn = global_data.get_conn().await?;
+    conn.exec_drop(query, (paper_id, user_id, status)).await?;
+    drop(global_data);
+    return Ok(true);
+}
+
+// 通过answer_id 更改用户状态
+
 // 查看试卷列表
 // 可选考试
 // 添加评论
