@@ -86,6 +86,7 @@ message LoginReply {
         string name = 2;
     }
     int32 loginType = 3;
+    int32 user_id = 4;
 }
 
 message PaperRequest {

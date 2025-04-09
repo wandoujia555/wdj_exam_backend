@@ -43,6 +43,8 @@ pub struct LoginRequest {
 pub struct LoginReply {
     #[prost(int32, tag = "3")]
     pub login_type: i32,
+    #[prost(int32, tag = "4")]
+    pub user_id: i32,
     #[prost(oneof = "login_reply::Message", tags = "1, 2")]
     pub message: ::core::option::Option<login_reply::Message>,
 }

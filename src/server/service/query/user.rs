@@ -9,6 +9,7 @@ use mysql_async::{prelude::*, Pool, Row};
 
 #[derive(Deserialize, Debug)]
 pub struct User {
+    id: i32,
     code: i32,
     name: String,
     password: String,
@@ -21,15 +22,19 @@ impl User {
     pub fn get_name(&self) -> &str {
         &self.name
     }
+    pub fn get_id(&self) -> i32 {
+        self.id
+    }
 }
 pub async fn query_student_by_code(student_code: i32) -> Result<Option<User>, mysql_async::Error> {
     let global_data = GLOBAL_DATA.lock().await;
-    let query = "SELECT code, name, password FROM student WHERE code = ?";
+    let query = "SELECT code, name, password, id FROM student WHERE code = ?";
     let mut conn = global_data.get_conn().await?;
     let result: Option<Row> = conn.exec_first(query, (student_code,)).await?;
 
     if let Some(row) = result {
         let student = User {
+            id: row.get("id").unwrap(),
             code: row.get("code").unwrap(),
             name: row.get("name").unwrap(),
             password: row.get("password").unwrap(),
@@ -43,12 +48,13 @@ pub async fn query_student_by_code(student_code: i32) -> Result<Option<User>, my
 
 pub async fn query_teacher_by_code(teacher_code: i32) -> Result<Option<User>, mysql_async::Error> {
     let global_data = GLOBAL_DATA.lock().await;
-    let query = "SELECT code, name, password FROM teacher WHERE code = ?";
+    let query = "SELECT code, name, password, id FROM teacher WHERE code = ?";
     let mut conn = global_data.get_conn().await?;
     let result: Option<Row> = conn.exec_first(query, (teacher_code,)).await?;
 
     if let Some(row) = result {
         let student = User {
+            id: row.get("id").unwrap(),
             code: row.get("code").unwrap(),
             name: row.get("name").unwrap(),
             password: row.get("password").unwrap(),
@@ -71,11 +77,13 @@ pub async fn authenticate(
     };
     let mut is_login = false;
     let mut name = String::new();
+    let mut id = 0;
     if let Ok(value) = result {
         if let Some(value) = value {
             is_login = value.get_password() == user.password;
             println!("{:?}", value);
             name = value.get_name().to_string();
+            id = value.get_id();
         }
     }
     // authenticate(studenta.code, studenta.password).await;
@@ -86,5 +94,6 @@ pub async fn authenticate(
             Some(Message::IsLogin(is_login))
         },
         login_type: 1,
+        user_id: id,
     }))
 }

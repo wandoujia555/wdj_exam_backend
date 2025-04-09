@@ -45,9 +45,9 @@ async fn start_server() -> std::io::Result<()> {
                 Cors::default()
                     // .allowed_origin("http://localhost:3000")
                     .allow_any_origin() // 允许的来源，通常是前端应用的地址
-                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"]) // 允许的 HTTP 方法
-                    // .allowed_headers(vec!["Content-Type", "Authorization"]) // 允许的请求头
                     .allow_any_header()
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"]) // 允许的 HTTP 方法
+                    // .allowed_headers(vec!["Content-Type", "Authorization"]) // 允许的请求头
                     .max_age(3600),
             )
             .configure(routers::routers::configure_routes)

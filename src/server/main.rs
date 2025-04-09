@@ -58,11 +58,13 @@ impl Greeter for GreeterImpl {
         };
         let mut is_login = false;
         let mut name = String::new();
+        let mut id = 0;
         if let Ok(value) = result {
             if let Some(value) = value {
                 is_login = value.get_password() == user.password;
                 println!("{:?}", value);
                 name = value.get_name().to_string();
+                id = value.get_id();
             }
         }
         // authenticate(studenta.code, studenta.password).await;
@@ -73,6 +75,7 @@ impl Greeter for GreeterImpl {
                 Some(Message::IsLogin(is_login))
             },
             login_type: 1,
+            user_id: id,
         }))
     }
     async fn get_paper_by_id(
